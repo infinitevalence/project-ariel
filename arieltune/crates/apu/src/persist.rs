@@ -240,7 +240,7 @@ fn generate_openrc_script(unit_name: &str, body: &str) -> String {
 
 	if is_gpu_unit {
 		out.push_str("start() {\n");
-		out.push_str("\tif grep -q \"force_mhz\" /var/lib/aputune/power.json; then\n");
+		out.push_str("\tif grep -qE '\"force_mhz\"[[:space:]]*:[[:space:]]*[0-9]' /var/lib/aputune/power.json; then\n");
 		out.push_str(&format!("\t\t{exec_start}\n"));
 		out.push_str("\telse\n");
 		let (bin, args) = if let Some(idx) = exec_start.find(' ') {
@@ -251,13 +251,13 @@ fn generate_openrc_script(unit_name: &str, body: &str) -> String {
 
 		if args.is_empty() {
 			out.push_str(&format!(
-				"\t\tstart-stop-daemon --start --pidfile \"$pidfile\" \\
+				"\t\tstart-stop-daemon --start --make-pidfile --pidfile \"$pidfile\" \\
 \t\t\t--background --exec {}\n",
 				bin
 			));
 		} else {
 			out.push_str(&format!(
-				"\t\tstart-stop-daemon --start --pidfile \"$pidfile\" \\
+				"\t\tstart-stop-daemon --start --make-pidfile --pidfile \"$pidfile\" \\
 \t\t\t--background --exec {} -- {}\n",
 				bin, args
 			));
@@ -280,13 +280,13 @@ fn generate_openrc_script(unit_name: &str, body: &str) -> String {
 
 			if args.is_empty() {
 				out.push_str(&format!(
-					"\tstart-stop-daemon --start --pidfile \"$pidfile\" \\
+					"\tstart-stop-daemon --start --make-pidfile --pidfile \"$pidfile\" \\
 \t\t--background --exec {}\n",
 					bin
 				));
 			} else {
 				out.push_str(&format!(
-					"\tstart-stop-daemon --start --pidfile \"$pidfile\" \\
+					"\tstart-stop-daemon --start --make-pidfile --pidfile \"$pidfile\" \\
 \t\t--background --exec {} -- {}\n",
 					bin, args
 				));
