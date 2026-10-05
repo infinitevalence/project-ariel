@@ -113,7 +113,8 @@ find_source() {
 	# Copy Module.symvers from running kernel (linux-xxxDev installs this in /lib/modules/$KVER/)
 	for _symvers in /lib/modules/${KVER}/Module.symvers /lib/modules/${KVER}/build/Module.symvers /usr/src/linux/Module.symvers; do
 		[ -f "$_symvers" ] && cp "$_symvers" "${MODSRC}/Module.symvers" 2>> "$BUILDLOG" && break
-	done}
+	done
+}
 
 patch_source() {
 	gfx="${MODSRC}/drivers/gpu/drm/amd/amdgpu/gfx_v10_0.c"
