@@ -79,6 +79,8 @@ check_deps() {
 		apk update
 		# shellcheck disable-SC2086
 		apk add --no-cache ${pkgs_to_install}
+	else
+		info "All dependencies satisfied."
 	fi
 }
 
@@ -93,26 +95,25 @@ find_source() {
 	MODSRC="${BUILDDIR}/linux-${CLEAN_KVER}"
 	[ -f "${MODSRC}/drivers/gpu/drm/amd/amdgpu/gfx_v10_0.c" ] || die "Kernel source tree invalid."
 
-	# On Alpine the running kernel's .config + Module.symvers are in /lib/modules/*/build/ 
-	# If that dir exists (post-install of linux-xxxDev) symlink it; otherwise copy key files
-	_builddir="${MODDIR}/build"
-	if [ -d "$_builddir" ]; then
-		ln -sfn "$_builddir" "${BUILDDIR}/linux-${CLEAN_KVER}/build"
-		info "Symlinked ${MODDIR}/build into kernel source tree."
-	elif [ -f /usr/src/linux/.config -o -d /usr/src/linux-${CLEAN_KVER} ]; then
-		# Try to copy config + symvers from /usr/src
-		SRC_CONFIG=""
-		[ -f /usr/src/linux/.config ] && SRC_CONFIG=/usr/src/linux/.config
-		[ -f /usr/src/linux-${CLEAN_KVER}/.config ] && SRC_CONFIG=/usr/src/linux-${CLEAN_KVER}/.config
-		[ -f /usr/src/Module.symvers ] && cp /usr/src/Module.symvers "${BUILDDIR}/Module.symvers" 2>> "$BUILDLOG" || true
-		[ -f /usr/src/linux/Module.symvers ] && cp /usr/src/linux/Module.symvers "${BUILDDIR}/Module.symvers" 2>> "$BUILDLOG" || true
-		[ -f /usr/src/linux-${CLEAN_KVER}/Module.symvers ] && cp /usr/src/linux-${CLEAN_KVER}/Module.symvers "${BUILDDIR}/Module.symvers" 2>> "$BUILDLOG" || true
-		[ -n "$SRC_CONFIG" ] && cp "$SRC_CONFIG" "${MODSRC}/.config" 2>> "$BUILDLOG" || true
-		info "Copied .config + Module.symvers from /usr/src."
-	else
-		info "No kernel build dir found; will continue without Module.symvers."
-	fi
-}
+	b_init=1
+
+	# Copy .config: /proc/config.gz (Alpine) or /boot/config-* (Debian/Ubuntu)
+	for _c in /proc/config.gz /boot/config-${KVER}; do
+		if [ -f "$_c" ]; then
+			case "$_c" in
+				*.gz) gunzip -c "$_c" > "${MODSRC}/.config" 2>> "$BUILDLOG";;
+				*)    cp "$_c" "${MODSRC}/.config" 2>> "$BUILDLOG";;
+			esac
+			info "Found .config."
+			b_init=0
+			break
+		fi
+	done
+
+	# Copy Module.symvers from running kernel (linux-xxxDev installs this in /lib/modules/$KVER/)
+	for _symvers in /lib/modules/${KVER}/Module.symvers /lib/modules/${KVER}/build/Module.symvers /usr/src/linux/Module.symvers; do
+		[ -f "$_symvers" ] && cp "$_symvers" "${MODSRC}/Module.symvers" 2>> "$BUILDLOG" && break
+	done}
 
 patch_source() {
 	gfx="${MODSRC}/drivers/gpu/drm/amd/amdgpu/gfx_v10_0.c"
@@ -262,20 +263,33 @@ patch_source() {
 build_module() {
 	amdgpu_dir="${MODSRC}/drivers/gpu/drm/amd/amdgpu"
 	info "Configuring kernel configuration..."
-	# Generate .config from running kernel config
-	CONFIG_SOURCE=""
-	[ -f /boot/config-${KVER} ] && CONFIG_SOURCE=/boot/config-${KVER}
-	[ -z "$CONFIG_SOURCE" ] && [ -f /usr/src/linux-${CLEAN_KVER}/.config ] && CONFIG_SOURCE=/usr/src/linux-${CLEAN_KVER}/.config
-	[ -n "$CONFIG_SOURCE" ] && cp "$CONFIG_SOURCE" "${MODSRC}/.config" 2>> "$BUILDLOG" || true
-	make -C "${MODSRC}" olddefconfig >> "$BUILDLOG" 2>&1 || true
+	# Supplement .config: try /proc/config.gz, then /usr/src/linux/.config if still missing
+	if [ ! -f "${MODSRC}/.config" ] || [ ! -f "${BUILDDIR}/Module.symvers" ]; then
+		info "Kernel sources found, but .config or Module.symvers missing - finding locally..."
+		# Try /proc/config.gz (Alpine standard)
+		[ -f /proc/config.gz ] && gunzip -c /proc/config.gz > "${MODSRC}/.config" 2>> "$BUILDLOG"
+		# Try /usr/src/linux/.config (linux-ltsDev package)
+		[ ! -s "${MODSRC}/.config" ] && [ -f /usr/src/linux/.config ] && cp /usr/src/linux/.config "${MODSRC}/.config" 2>> "$BUILDLOG"
+		# Try /boot/config-* (Debian/Ubuntu)
+		[ ! -s "${MODSRC}/.config" ] && [ -f /boot/config-${KVER} ] && cp /boot/config-${KVER} "${MODSRC}/.config" 2>> "$BUILDLOG"
+		# Try /lib/modules/*/build/.config
+		[ ! -s "${MODSRC}/.config" ] && [ -f "${MODDIR}/build/.config" ] && cp "${MODDIR}/build/.config" "${MODSRC}/.config" 2>> "$BUILDLOG"
 
-	# Copy Module.symvers from running kernel source/build if available
-	for _symvers in /lib/modules/${KVER}/build/Module.symvers /usr/src/linux-${CLEAN_KVER}/Module.symvers /usr/src/linux/Module.symvers; do
-		[ -f "$_symvers" ] && cp "$_symvers" "${MODSRC}/Module.symvers" 2>> "$BUILDLOG" && break
-	done
+		# Copy Module.symvers if not already copied by find_source
+		[ ! -f "${MODSRC}/Module.symvers" ] && for _symvers in /lib/modules/${KVER}/Module.symvers /lib/modules/${KVER}/build/Module.symvers /usr/src/linux/Module.symvers; do
+			[ -f "$_symvers" ] && cp "$_symvers" "${MODSRC}/Module.symvers" 2>> "$BUILDLOG" && break
+		done
+
+		info "Supplemented .config + Module.symvers from system."
+	fi
+
+	make -C "${MODSRC}" olddefconfig >> "$BUILDLOG" 2>&1 || true
 
 	info "Preparing kernel source tree..."
 	make -C "${MODSRC}" modules_prepare >> "$BUILDLOG" 2>&1
+
+	info "Building full kernel to generate Module.symvers..."
+	make -C "${MODSRC}" -j"$(nproc)" >> "$BUILDLOG" 2>&1
 
 	info "Compiling amdgpu module with $(nproc) jobs (log: $BUILDLOG)..."
 	make -C "${MODSRC}" M="$amdgpu_dir" clean >> "$BUILDLOG" 2>&1
