@@ -1,19 +1,24 @@
-Blocker 1 - the force_mhz grep matches every power.json.
-PowerConfig::save writes serde_json::to_string_pretty(self) (dpm.rs:217) and force_mhz is an Option<u32> with no skip_serializing_if (dpm.rs:83) - auto mode still serializes "force_mhz": null. So grep -q "force_mhz" (persist.rs:243) is always true, the sync branch always fires, and gpu apply-boot runs the governor in-process (cli.rs:329) inside start() - OpenRC start never returns on a governor-mode boot. This is from reading the source; confirm it on your Alpine box. Match the value, not the key:
-
-grep -Eq '"force_mhz"[[:space:]]*:[[:space:]]*[0-9]' /var/lib/aputune/power.json
-
-
-or drop null keys with #[serde(skip_serializing_if = "Option::is_none")].
-
-Blocker 2 - the backgrounded daemon has no stop() and no pidfile.
-The generated script defines only start(), and --background without --make-pidfile never writes /run/{name}.pid. Stop/restart cannot reap the old governor, so a restart starts a second SMU writer - the round-1 wedge class, only half fixed. Add --make-pidfile (consider --wait) and emit:
-
-stop() {
-        ebegin
-        start-stop-daemon --stop --pidfile "$pidfile"
-        eend $?
-}
-
-
-Nothing pins the generated script text yet; one string test asserting both fixes would have caught blocker 1 - and it must fail with the fix reverted.
+LD [M]  amdgpu.o
+MODPOST Module.symvers
+WARNING: /tmp/bc250-40cu-build/linux-6.18.54/Module.symvers is missing.
+Modules may not have dependencies or modversions.
+You may get many unresolved symbol errors.
+You can set KBUILD_MODPOST_WARN=1 to turn errors into warning
+if you want to proceed at your own risk.
+ERROR: modpost: "kobj_sysfs_ops" [amdgpu.ko] undefined!
+ERROR: modpost: "drm_writeback_queue_job" [amdgpu.ko] undefined!
+ERROR: modpost: "memmove" [amdgpu.ko] undefined!
+ERROR: modpost: "drm_dp_atomic_find_time_slots" [amdgpu.ko] undefined!
+ERROR: modpost: "drm_dsc_compute_rc_parameters" [amdgpu.ko] undefined!
+ERROR: modpost: "ttm_bo_vm_close" [amdgpu.ko] undefined!
+ERROR: modpost: "drm_print_memory_stats" [amdgpu.ko] undefined!
+ERROR: modpost: "__drm_crtc_commit_free" [amdgpu.ko] undefined!
+ERROR: modpost: "drm_syncobj_get_handle" [amdgpu.ko] undefined!
+ERROR: modpost: "pm_genpd_add_device" [amdgpu.ko] undefined!
+WARNING: modpost: suppressed 1054 unresolved symbol warnings because there were too many)
+make[3]: *** [/tmp/bc250-40cu-build/linux-6.18.54/scripts/Makefile.modpost:147: Module.symvers] Error 1
+make[2]: *** [/tmp/bc250-40cu-build/linux-6.18.54/Makefile:2000: modpost] Error 2
+make[1]: *** [/tmp/bc250-40cu-build/linux-6.18.54/Makefile:248: __sub-make] Error 2
+make[1]: Leaving directory '/tmp/bc250-40cu-build/linux-6.18.54/drivers/gpu/drm/amd/amdgpu'
+make: *** [Makefile:248: __sub-make] Error 2
+make: Leaving directory '/tmp/bc250-40cu-build/linux-6.18.54'
