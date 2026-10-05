@@ -1,5 +1,5 @@
 #!/bin/sh
-# bc250-enable-40cu-alpine.sh — Build and install patched amdgpu for 40 CU on Alpine Linux
+# bc250-enable-40cu-alpine.sh - Build and install patched amdgpu for 40 CU on Alpine Linux
 #
 # Usage:
 #	 doas ./bc250-enable-40cu-alpine.sh build  # patch + compile + install
@@ -104,20 +104,20 @@ patch_source() {
 	patchbase="$(dirname "$(realpath "$0")")/../patches"
 	patchdir=""
 	if [ -f /etc/os-release ]; then
-		re_id="$(grep '^ID=' /etc/os-release | cut -d= -f2 | tr -d '"')"
+		re_id="$(grep '^ID=' /etc/os-release | cut -d= -f2 | tr -d '\042')"
 		case "$re_id" in
 		alpine*)    patchdir="$patchbase/alpine-6.18.53" ;;
 		cachy*)     patchdir="$patchbase/bc250-cachyos-7.0.9" ;;
 		*)          ;; # falls through below
-		fi
-		[ -z "$patchdir" ] && warn "Unknown OS '$re_id', checking uname -s…"
+		esac
+		[ -z "$patchdir" ] && warn "Unknown OS '$re_id', checking uname -s"
 	elif uname -s | grep -qi cygwin; then
 		patchdir="$patchbase/bc250-cachyos-7.0.9"
 	fi
 	# Last resort: if script name hints at alpine, default there
 	[ -z "$patchdir" ] && [ -n "$(basename "$0" | grep -i alpine)" ] && patchdir="$patchbase/alpine-6.18.53"
 
-	[ -d "$patchdir" ] || die "No patch directory found — try $patchbase/alpine-6.18.53 or $patchbase/bc250-cachyos-7.0.9"
+	[ -d "$patchdir" ] || die "No patch directory found - try $patchbase/alpine-6.18.53 or $patchbase/bc250-cachyos-7.0.9"
 
 	# Patch descriptions from SERIES.md
 	
@@ -156,22 +156,22 @@ patch_source() {
 		10) desc="10-print-full-32bit-cac-value: CAC print widened to 32-bit" ;;
 		11) desc="11-full-telemetry-dump-debugfs: cyan_skillfish_telemetry node (clocks/pstates/voltages)" ;;
 		12) desc="12-unlock-all-40-compute-units: Studebaker CU unlock CC+SPI+RLC → all 40 CUs ⚠ Vulkan-only, hangs ROCm/HSA" ;;
-		13) desc="13-gfxoff-disable-gfx1013: GFXOFF disabled for gfx1013 — prevents GPU power-state hangs" ;;
+		13) desc="13-gfxoff-disable-gfx1013: GFXOFF disabled for gfx1013 - prevents GPU power-state hangs" ;;
 		14) desc="14-gmc-kiq-bypass-dead-gpu: KIQ bypass + dead-GPU detection in gmc_v10_0 TLB flush" ;;
 		15) desc="15-amdgpu-gmc-kiq-bypass: KIQ bypass + dead-GPU detection in centralized GMC code" ;;
-		16) desc="16-cu-unlock-cc-spi-safe-no-rlc: BC-250 40 CU unlock — CC+SPI only, NO RLC_PG (safe for ROCm+HSA)" ;;
-		17) desc="17-bc250-gfx1013-fault-probe: gfx1013 instruction-fetch fault probe — diagnostic-only, fails to compile on 6.18.53 (missing GMC9 constants), not needed for CU unlock" ;;
-		18) desc="18-ttm-guard-null-pages-on-unpopulate: Guard NULL ttm->pages[] on unpopulate — survive compute faults" ;;
-		19) desc="19-bc250-kfd-skip-sdma0: BC-250 SDMA0 skip — restrict user queues to SDMA1" ;;
+		16) desc="16-cu-unlock-cc-spi-safe-no-rlc: BC-250 40 CU unlock - CC+SPI only, NO RLC_PG (safe for ROCm+HSA)" ;;
+		17) desc="17-bc250-gfx1013-fault-probe: gfx1013 instruction-fetch fault probe - diagnostic-only, fails to compile on 6.18.53 (missing GMC9 constants), not needed for CU unlock" ;;
+		18) desc="18-ttm-guard-null-pages-on-unpopulate: Guard NULL ttm->pages[] on unpopulate - survive compute faults" ;;
+		19) desc="19-bc250-kfd-skip-sdma0: BC-250 SDMA0 skip - restrict user queues to SDMA1" ;;
 		20) desc="20-amdgpu-ttm-populate-null-guard: READ_ONCE + return -ENOMEM NULL guard on TTM populate path" ;;
-		21) desc="21-amdgpu-gmc-flush-pasid-kiq: KIQ PASID-flush disable — superseded by patch 14(e)" ;;
-		22) desc="22-amdgpu-ttm-fno-lto: CFLAGS_amdgpu_ttm.o += -fno-lto — prevents ThinLTO eliding NULL guards" ;;
+		21) desc="21-amdgpu-gmc-flush-pasid-kiq: KIQ PASID-flush disable - superseded by patch 14(e)" ;;
+		22) desc="22-amdgpu-ttm-fno-lto: CFLAGS_amdgpu_ttm.o += -fno-lto - prevents ThinLTO eliding NULL guards" ;;
 		23) desc="23-gb-addr-config-num-se: GB_ADDR_CONFIG 0x00000044→0x00100044 in gc_10_1_2 golden table" ;;
-		24) desc="24-gmc-v10-flush-all-vmids: TLB flush all mapped VMIDs on BC-250 — fixes GPU aliasing bug" ;;
-		25) desc="25-bc250-flush-tlb-by-runlist: Rebuild the runlist on unmap — firmware invalidates compute TLB" ;;
-		26) desc="26-bc250-sdma-firmware-override: SDMA firmware override — navi10/navi12 blobs work" ;;
-		27) desc="27-bc250-early-sdma-trap: Write SDMA TRAP_ENABLE in gfx_resume — removes boot stalls" ;;
-		28) desc="28-bc250-8core-telemetry: 8-core hybrid SMU metrics layout — reinterprets firmware table" ;;
+		24) desc="24-gmc-v10-flush-all-vmids: TLB flush all mapped VMIDs on BC-250 - fixes GPU aliasing bug" ;;
+		25) desc="25-bc250-flush-tlb-by-runlist: Rebuild the runlist on unmap - firmware invalidates compute TLB" ;;
+		26) desc="26-bc250-sdma-firmware-override: SDMA firmware override - navi10/navi12 blobs work" ;;
+		27) desc="27-bc250-early-sdma-trap: Write SDMA TRAP_ENABLE in gfx_resume - removes boot stalls" ;;
+		28) desc="28-bc250-8core-telemetry: 8-core hybrid SMU metrics layout - reinterprets firmware table" ;;
 		29) desc="29-bc250-tmr-discovery-offset-fix: Honor IFWI-reported discovery TMR location" ;;
 		30) desc="30-cyan-skillfish2-hardcoded-fallback: Fallback to hardcoded cyan skillfish IP table" ;;
 		*) continue ;;
@@ -186,7 +186,7 @@ patch_source() {
 			prompt_suffix="(Y/n)"
 		fi
 
-		# Prompt — clean and concise
+		# Prompt - clean and concise
 		printf 'Apply patch %s: %s %s: ' \
 			"$pnum" "$desc" "$prompt_suffix" >&2
 		read -r ans

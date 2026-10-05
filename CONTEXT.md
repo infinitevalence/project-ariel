@@ -1,19 +1,19 @@
-Bug A: the oneshot command lands OUTSIDE start()
-The is_oneshot arm pushes just \t{exec_start}\n at TOP LEVEL - openrc-run SOURCES these scripts for every verb (status, stop, shutdown)
-So the SMU write fires whenever OpenRC merely asks a question, and there is no start() for the oneshot units at all
-Wrap it: start() { <exec>; }
+Blocker 1 - the force_mhz grep matches every power.json.
+PowerConfig::save writes serde_json::to_string_pretty(self) (dpm.rs:217) and force_mhz is an Option<u32> with no skip_serializing_if (dpm.rs:83) - auto mode still serializes "force_mhz": null. So grep -q "force_mhz" (persist.rs:243) is always true, the sync branch always fires, and gpu apply-boot runs the governor in-process (cli.rs:329) inside start() - OpenRC start never returns on a governor-mode boot. This is from reading the source; confirm it on your Alpine box. Match the value, not the key:
 
-Bug B: is_oneshot never matches the GPU unit
-GPU_UNIT is Type=simple + RemainAfterExit=yes - not Type=oneshot
-Only the cpu-oc and route units are oneshot, and they just got Bug A
-The manual/released-exits-0 behavior you are solving for is RUNTIME state (what apply-boot reads from power.json), not unit type
-Suggested shape, mirrors systemd exactly:
-start() {
-    if grep -q "force_mhz" /var/lib/aputune/power.json; then
-        /usr/local/bin/arieltune apu gpu apply-boot   # sync, rc tells the story
-    else
-        start-stop-daemon --start --pidfile "$pidfile" --background --exec ... 
-    fi
+grep -Eq '"force_mhz"[[:space:]]*:[[:space:]]*[0-9]' /var/lib/aputune/power.json
+
+
+or drop null keys with #[serde(skip_serializing_if = "Option::is_none")].
+
+Blocker 2 - the backgrounded daemon has no stop() and no pidfile.
+The generated script defines only start(), and --background without --make-pidfile never writes /run/{name}.pid. Stop/restart cannot reap the old governor, so a restart starts a second SMU writer - the round-1 wedge class, only half fixed. Add --make-pidfile (consider --wait) and emit:
+
+stop() {
+        ebegin
+        start-stop-daemon --stop --pidfile "$pidfile"
+        eend $?
 }
 
-Also worth a unit test: assert every generated script contains start() { - that alone would have caught Bug A for all three unit kinds.
+
+Nothing pins the generated script text yet; one string test asserting both fixes would have caught blocker 1 - and it must fail with the fix reverted.
