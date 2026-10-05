@@ -101,7 +101,23 @@ patch_source() {
 		return 0
 	fi
 
-	patchdir="$(dirname "$(realpath "$0")")/../patch"
+	patchbase="$(dirname "$(realpath "$0")")/../patches"
+	patchdir=""
+	if [ -f /etc/os-release ]; then
+		re_id="$(grep '^ID=' /etc/os-release | cut -d= -f2 | tr -d '"')"
+		case "$re_id" in
+		alpine*)    patchdir="$patchbase/alpine-6.18.53" ;;
+		cachy*)     patchdir="$patchbase/bc250-cachyos-7.0.9" ;;
+		*)          ;; # falls through below
+		fi
+		[ -z "$patchdir" ] && warn "Unknown OS '$re_id', checking uname -s…"
+	elif uname -s | grep -qi cygwin; then
+		patchdir="$patchbase/bc250-cachyos-7.0.9"
+	fi
+	# Last resort: if script name hints at alpine, default there
+	[ -z "$patchdir" ] && [ -n "$(basename "$0" | grep -i alpine)" ] && patchdir="$patchbase/alpine-6.18.53"
+
+	[ -d "$patchdir" ] || die "No patch directory found — try $patchbase/alpine-6.18.53 or $patchbase/bc250-cachyos-7.0.9"
 
 	# Patch descriptions from SERIES.md
 	
