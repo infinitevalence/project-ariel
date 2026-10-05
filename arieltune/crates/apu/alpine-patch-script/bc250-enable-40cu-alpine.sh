@@ -93,8 +93,25 @@ find_source() {
 	MODSRC="${BUILDDIR}/linux-${CLEAN_KVER}"
 	[ -f "${MODSRC}/drivers/gpu/drm/amd/amdgpu/gfx_v10_0.c" ] || die "Kernel source tree invalid."
 
-	# Symlink running kernel's build directory (provides .config and Module.symvers)
-	ln -sfn "${MODDIR}/build" "${BUILDDIR}/linux-${CLEAN_KVER}/build"
+	# On Alpine the running kernel's .config + Module.symvers are in /lib/modules/*/build/ 
+	# If that dir exists (post-install of linux-xxxDev) symlink it; otherwise copy key files
+	_builddir="${MODDIR}/build"
+	if [ -d "$_builddir" ]; then
+		ln -sfn "$_builddir" "${BUILDDIR}/linux-${CLEAN_KVER}/build"
+		info "Symlinked ${MODDIR}/build into kernel source tree."
+	elif [ -f /usr/src/linux/.config -o -d /usr/src/linux-${CLEAN_KVER} ]; then
+		# Try to copy config + symvers from /usr/src
+		SRC_CONFIG=""
+		[ -f /usr/src/linux/.config ] && SRC_CONFIG=/usr/src/linux/.config
+		[ -f /usr/src/linux-${CLEAN_KVER}/.config ] && SRC_CONFIG=/usr/src/linux-${CLEAN_KVER}/.config
+		[ -f /usr/src/Module.symvers ] && cp /usr/src/Module.symvers "${BUILDDIR}/Module.symvers" 2>> "$BUILDLOG" || true
+		[ -f /usr/src/linux/Module.symvers ] && cp /usr/src/linux/Module.symvers "${BUILDDIR}/Module.symvers" 2>> "$BUILDLOG" || true
+		[ -f /usr/src/linux-${CLEAN_KVER}/Module.symvers ] && cp /usr/src/linux-${CLEAN_KVER}/Module.symvers "${BUILDDIR}/Module.symvers" 2>> "$BUILDLOG" || true
+		[ -n "$SRC_CONFIG" ] && cp "$SRC_CONFIG" "${MODSRC}/.config" 2>> "$BUILDLOG" || true
+		info "Copied .config + Module.symvers from /usr/src."
+	else
+		info "No kernel build dir found; will continue without Module.symvers."
+	fi
 }
 
 patch_source() {
