@@ -112,8 +112,10 @@ find_source() {
 
 	# Copy Module.symvers from running kernel (linux-xxxDev installs this in /lib/modules/$KVER/)
 	for _symvers in /lib/modules/${KVER}/Module.symvers /lib/modules/${KVER}/build/Module.symvers /usr/src/linux/Module.symvers; do
-		[ -f "$_symvers" ] && cp "$_symvers" "${MODSRC}/Module.symvers" 2>> "$BUILDLOG" && break
-	done
+			if [ -f "$_symvers" ]; then cp "$_symvers" "${MODSRC}/Module.symvers" 2>> "$BUILDLOG"; fi
+
+		done || true
+
 }
 
 patch_source() {
@@ -132,12 +134,12 @@ patch_source() {
 		cachy*)     patchdir="$patchbase/bc250-cachyos-7.0.9" ;;
 		*)          ;; # falls through below
 		esac
-		[ -z "$patchdir" ] && warn "Unknown OS '$re_id', checking uname -s"
+		[ -z "$patchdir" ] && warn "Unknown OS '$re_id', checking uname -s" || true
 	elif uname -s | grep -qi cygwin; then
 		patchdir="$patchbase/bc250-cachyos-7.0.9"
 	fi
 	# Last resort: if script name hints at alpine, default there
-	[ -z "$patchdir" ] && [ -n "$(basename "$0" | grep -i alpine)" ] && patchdir="$patchbase/alpine-6.18.53"
+	[ -z "$patchdir" ] && [ -n "$(basename "$0" | grep -i alpine)" ] && patchdir="$patchbase/alpine-6.18.53" || true
 
 	[ -d "$patchdir" ] || die "No patch directory found - try $patchbase/alpine-6.18.53 or $patchbase/bc250-cachyos-7.0.9"
 
@@ -268,18 +270,23 @@ build_module() {
 	if [ ! -f "${MODSRC}/.config" ] || [ ! -f "${BUILDDIR}/Module.symvers" ]; then
 		info "Kernel sources found, but .config or Module.symvers missing - finding locally..."
 		# Try /proc/config.gz (Alpine standard)
-		[ -f /proc/config.gz ] && gunzip -c /proc/config.gz > "${MODSRC}/.config" 2>> "$BUILDLOG"
+		if [ -f /proc/config.gz ]; then gunzip -c /proc/config.gz > "${MODSRC}/.config" 2>> "$BUILDLOG"; fi
 		# Try /usr/src/linux/.config (linux-ltsDev package)
-		[ ! -s "${MODSRC}/.config" ] && [ -f /usr/src/linux/.config ] && cp /usr/src/linux/.config "${MODSRC}/.config" 2>> "$BUILDLOG"
+		if [ ! -s "${MODSRC}/.config" ] && [ -f /usr/src/linux/.config ]; then cp /usr/src/linux/.config "${MODSRC}/.config" 2>> "$BUILDLOG"; fi
 		# Try /boot/config-* (Debian/Ubuntu)
-		[ ! -s "${MODSRC}/.config" ] && [ -f /boot/config-${KVER} ] && cp /boot/config-${KVER} "${MODSRC}/.config" 2>> "$BUILDLOG"
+		if [ ! -s "${MODSRC}/.config" ] && [ -f /boot/config-${KVER} ]; then cp /boot/config-${KVER} "${MODSRC}/.config" 2>> "$BUILDLOG"; fi
 		# Try /lib/modules/*/build/.config
-		[ ! -s "${MODSRC}/.config" ] && [ -f "${MODDIR}/build/.config" ] && cp "${MODDIR}/build/.config" "${MODSRC}/.config" 2>> "$BUILDLOG"
+		if [ ! -s "${MODSRC}/.config" ] && [ -f "${MODDIR}/build/.config" ]; then cp "${MODDIR}/build/.config" "${MODSRC}/.config" 2>> "$BUILDLOG"; fi
 
 		# Copy Module.symvers if not already copied by find_source
-		[ ! -f "${MODSRC}/Module.symvers" ] && for _symvers in /lib/modules/${KVER}/Module.symvers /lib/modules/${KVER}/build/Module.symvers /usr/src/linux/Module.symvers; do
-			[ -f "$_symvers" ] && cp "$_symvers" "${MODSRC}/Module.symvers" 2>> "$BUILDLOG" && break
-		done
+		if [ ! -f "${MODSRC}/Module.symvers" ]; then
+			for _symvers in /lib/modules/${KVER}/Module.symvers /lib/modules/${KVER}/build/Module.symvers /usr/src/linux/Module.symvers; do
+				if [ -f "$_symvers" ]; then
+					cp "$_symvers" "${MODSRC}/Module.symvers" 2>> "$BUILDLOG"
+					break
+				fi
+			done || true
+		fi
 
 		info "Supplemented .config + Module.symvers from system."
 	fi
@@ -352,7 +359,6 @@ do_disable() {
 do_restore() {
 	target="${MODPATH}.gz"
 	[ -f "${MODPATH}" ] && target="${MODPATH}"
-	backup
 	backup="$(ls -1 "${target}".bc250-backup-* 2>/dev/null | head -1)"
 	[ -n "$backup" ] || die "No backup found"
 	cp "$backup" "$target"
