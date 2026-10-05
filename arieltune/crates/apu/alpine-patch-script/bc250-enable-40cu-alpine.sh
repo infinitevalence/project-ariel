@@ -247,7 +247,12 @@ build_module() {
 
 	info "Preparing kernel source tree..."
 	make -C "${MODSRC}" prepare modules_prepare >> "$BUILDLOG" 2>&1
-	cp "${MODDIR}/build/Module.symvers" "${MODSRC}/" >> "$BUILDLOG" 2>&1 || true
+	MODSYMVARS=""
+	# Try common Module.symvers locations for the running kernel
+	for _s in /usr/src/Module.symvers /usr/src/linux/Module.symvers "${MODDIR}/build/Module.symvers"; do
+		[ -f "$_s" ] && { MODSYMVARS="$_s"; break; }
+	done
+	[ -n "$MODSYMVARS" ] && cp "$MODSYMVARS" "${MODSRC}/" >> "$BUILDLOG" 2>&1 || true
 
 	info "Compiling amdgpu module with $(nproc) jobs (log: $BUILDLOG)..."
 	make -C "${MODSRC}" M="$amdgpu_dir" clean >> "$BUILDLOG" 2>&1
