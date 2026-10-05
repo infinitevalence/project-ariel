@@ -262,8 +262,17 @@ patch_source() {
 build_module() {
 	amdgpu_dir="${MODSRC}/drivers/gpu/drm/amd/amdgpu"
 	info "Configuring kernel configuration..."
-	cp /boot/config-"${KVER}" "${MODSRC}/.config" >> "$BUILDLOG" 2>&1 || true
-	make -C "${MODSRC}" oldconfig >> "$BUILDLOG" 2>&1 || true
+	# Generate .config from running kernel config
+	CONFIG_SOURCE=""
+	[ -f /boot/config-${KVER} ] && CONFIG_SOURCE=/boot/config-${KVER}
+	[ -z "$CONFIG_SOURCE" ] && [ -f /usr/src/linux-${CLEAN_KVER}/.config ] && CONFIG_SOURCE=/usr/src/linux-${CLEAN_KVER}/.config
+	[ -n "$CONFIG_SOURCE" ] && cp "$CONFIG_SOURCE" "${MODSRC}/.config" 2>> "$BUILDLOG" || true
+	make -C "${MODSRC}" olddefconfig >> "$BUILDLOG" 2>&1 || true
+
+	# Copy Module.symvers from running kernel source/build if available
+	for _symvers in /lib/modules/${KVER}/build/Module.symvers /usr/src/linux-${CLEAN_KVER}/Module.symvers /usr/src/linux/Module.symvers; do
+		[ -f "$_symvers" ] && cp "$_symvers" "${MODSRC}/Module.symvers" 2>> "$BUILDLOG" && break
+	done
 
 	info "Preparing kernel source tree..."
 	make -C "${MODSRC}" modules_prepare >> "$BUILDLOG" 2>&1
