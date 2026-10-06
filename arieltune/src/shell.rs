@@ -212,9 +212,9 @@ fn install_panic_hook() {
 }
 
 fn reboot() {
-    let _ = std::process::Command::new("systemctl")
-        .arg("reboot")
-        .status();
+	// Boot service: OpenRC has no systemd service that responds to systemctl
+	// reboot, so use the platform-agnostic /sbin/reboot; works on systemd too.
+	let _ = std::process::Command::new("/sbin/reboot").status();
 }
 
 #[cfg(test)]
