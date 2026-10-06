@@ -293,14 +293,8 @@ build_module() {
 
 	make -C "${MODSRC}" olddefconfig >> "$BUILDLOG" 2>&1 || true
 
-	info "Preparing kernel source tree..."
-	make -C "${MODSRC}" modules_prepare >> "$BUILDLOG" 2>&1
-
-	info "Building full kernel to generate Module.symvers..."
-	make -C "${MODSRC}" -j"$(nproc)" >> "$BUILDLOG" 2>&1
-
 	info "Compiling amdgpu module with $(nproc) jobs (log: $BUILDLOG)..."
-	make -C "${MODSRC}" M="$amdgpu_dir" clean >> "$BUILDLOG" 2>&1
+	make -C "${MODSRC}" M="$amdgpu_dir" clean >> "$BUILDLOG" 2>&1 || true
 	if ! make -C "${MODSRC}" M="$amdgpu_dir" -j"$(nproc)" modules >> "$BUILDLOG" 2>&1; then
 		err "Compilation failed. Check build log at: $BUILDLOG"
 		exit 1
