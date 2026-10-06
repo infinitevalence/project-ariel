@@ -79,11 +79,11 @@ pub struct PowerConfig {
     pub deep_mhz: u32,
     /// Persistent manual clock (MHz). Some = pin here across reboots (manual
     /// mode, auto controllers off); None = auto (`auto_mode` governs).
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub force_mhz: Option<u32>,
     /// Persistent forced GFX Vid (mV). Some = pin this GPU voltage across reboots
     /// (re-applied by `gpu apply-boot`); None = SMU-managed voltage.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub force_vid_mv: Option<u32>,
     /// The auto controller used when `force_mhz` is None. Defaults to Governor
     /// so a pre-existing power.json (no field) keeps today's behavior.
