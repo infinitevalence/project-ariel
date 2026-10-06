@@ -1,25 +1,36 @@
- .../apu/alpine-patch-script/bc250-enable-40cu-alpine.sh      |   8 +-
- 2 files changed, 111 insertions(+), 7 deletions(-)
-belicose:~/project-ariel/arieltune/crates/apu$ doas ./alpine-patch-script/bc250-enable-40cu-alp
-ine.sh
-doas (infinitevalence@belicose.endlessdelve.com) password:
-Usage: doas ./alpine-patch-script/bc250-enable-40cu-alpine.sh {build|enable|disable|restore|sta
-belicose:~/project-ariel/arieltune/crates/apu$ doas ./alpine-patch-script/bc250-enable-40cu-alp
+belicose:~/project-ariel$ doas ./arieltune/crates/apu/alpine-patch-script/bc250-enable-40cu-alp
 ine.sh build
-[+] Missing dependencies detected. Installing via apk: linux-lts-dev linux-headers build-base p
+doas (infinitevalence@belicose.endlessdelve.com) password:
+[+] Missing dependencies detected. Installing via apk: mesa mesa-gl mesa-dri-gallium mesa-vulkan-ati vulkan-loader linux-lts-dev linux-headers build-base pahole elfutils-dev openssl-dev flex bison bc perl zstd-dev syslinux...
 v3.24.2-86-g3e05bdc04e1 [http://mirrors.gigenet.com/alpinelinux/v3.24/main]
 v3.24.2-87-gcc3c058c10e [http://mirrors.gigenet.com/alpinelinux/v3.24/community]
 OK: 28650 distinct packages available
-OK: 1088.5 MiB in 163 packages
+( 1/15) Installing spirv-tools (1.4.341.0-r0)
+( 2/15) Installing hwdata-pci (0.408-r0)
+( 3/15) Installing libpciaccess (0.19-r0)
+( 4/15) Installing libdrm (2.4.134-r0)
+( 5/15) Installing libxshmfence (1.3.3-r0)
+( 6/15) Installing mesa (26.1.6-r0)
+( 7/15) Installing mesa-gbm (26.1.6-r0)
+( 8/15) Installing mesa-dri-gallium (26.1.6-r0)
+( 9/15) Installing libxext (1.3.7-r0)
+(10/15) Installing libxxf86vm (1.1.7-r0)
+(11/15) Installing mesa-gl (26.1.6-r0)
+(12/15) Installing libdisplay-info (0.3.0-r0)
+(13/15) Installing eudev-libs (3.2.14-r6)
+(14/15) Installing mesa-vulkan-ati (26.1.6-r0)
+(15/15) Installing vulkan-loader (1.4.347-r0)
+Executing busybox-1.37.0-r31.trigger
+OK: 1156.6 MiB in 178 packages
 [+] BC-250 (PCI ID 13fe) successfully verified.
 [+] Found .config.
 [+] Source already patched.
 [+] Configuring kernel configuration...
 [+] Kernel sources found, but .config or Module.symvers missing - finding locally...
 [+] Supplemented .config + Module.symvers from system.
-[+] Compiling amdgpu module with 12 jobs (log: /tmp/bc250-40cu-build.log)...
+[+] Compiling amdgpu module directly (olddefconfig + modules_prepare + make modules)...
 [E] Compilation failed. Check build log at: /tmp/bc250-40cu-build.log
-belicose:~/project-ariel/arieltune/crates/apu$ tail -n 100 /tmp/bc250-40cu-build.log
+belicose:~/project-ariel$ tail -n 100 /tmp/bc250-40cu-build.log
   CC [M]  sdma_v4_4_2.o
   CC [M]  sdma_v5_0.o
   CC [M]  sdma_v5_2.o

@@ -294,8 +294,28 @@ build_module() {
 	make -C "${MODSRC}" olddefconfig >> "$BUILDLOG" 2>&1 || true
 	make -C "${MODSRC}" modules_prepare >> "$BUILDLOG" 2>&1 || true
 
+	# Ensure Module.symvers is present after modules_prepare
+	if [ ! -f "${MODSRC}/Module.symvers" ]; then
+		for _symvers in /lib/modules/${KVER}/Module.symvers /lib/modules/${KVER}/build/Module.symvers /usr/src/linux/Module.symvers /usr/src/linux-headers-${KVER}/Module.symvers; do
+			if [ -f "$_symvers" ]; then
+				cp "$_symvers" "${MODSRC}/Module.symvers" 2>> "$BUILDLOG"
+				break
+			fi
+		done || true
+	fi
+
 	info "Compiling amdgpu module directly (olddefconfig + modules_prepare + make modules)..."
 	make -C "${MODSRC}" M="$amdgpu_dir" clean >> "$BUILDLOG" 2>&1 || true
+
+	# Re-ensure Module.symvers after clean
+	if [ ! -f "${MODSRC}/Module.symvers" ]; then
+		for _symvers in /lib/modules/${KVER}/Module.symvers /lib/modules/${KVER}/build/Module.symvers /usr/src/linux/Module.symvers /usr/src/linux-headers-${KVER}/Module.symvers; do
+			if [ -f "$_symvers" ]; then
+				cp "$_symvers" "${MODSRC}/Module.symvers" 2>> "$BUILDLOG"
+				break
+			fi
+		done || true
+	fi
 	if ! make -C "${MODSRC}" M="$amdgpu_dir" -j"$(nproc)" modules >> "$BUILDLOG" 2>&1; then
 		err "Compilation failed. Check build log at: $BUILDLOG"
 		exit 1
