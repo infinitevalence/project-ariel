@@ -239,11 +239,13 @@ fn generate_openrc_script(unit_name: &str, body: &str) -> String {
 		.any(|l| l.trim().starts_with("ExecStart=") && l.contains("gpu apply-boot"));
 
 	if is_gpu_unit {
-		out.push_str("depends() {\n");
-		out.push_str("\tafter(\"openssh\")\n");
+		out.push_str("depend() {\n");
+		out.push_str("\tafter openssh\n");
+		out.push_str("\tuse userstat\n");
 		out.push_str("}\n\n");
+		out.push_str("background\n\n");
 		out.push_str("start() {\n");
-		out.push_str("\tif grep -q \"force_mhz\" /var/lib/aputune/power.json; then\n");
+		out.push_str("\tif grep -Eq '\"force_mhz\"[[:space:]]*:[[:space:]]*[0-9]' /var/lib/aputune/power.json; then\n");
 		out.push_str(&format!("\t\t{exec_start}\n"));
 		out.push_str("\telse\n");
 		let (bin, args) = if let Some(idx) = exec_start.find(' ') {
@@ -254,18 +256,22 @@ fn generate_openrc_script(unit_name: &str, body: &str) -> String {
 
 		if args.is_empty() {
 			out.push_str(&format!(
-				"\t\tstart-stop-daemon --start --pidfile \"$pidfile\" \\
+				"\t\tstart-stop-daemon --start --make-pidfile \"$pidfile\" \\
 \t\t\t--background --exec {}\n",
 				bin
 			));
 		} else {
 			out.push_str(&format!(
-				"\t\tstart-stop-daemon --start --pidfile \"$pidfile\" \\
+				"\t\tstart-stop-daemon --start --make-pidfile \"$pidfile\" \\
 \t\t\t--background --exec {} -- {}\n",
 				bin, args
 			));
 		}
 		out.push_str("\tfi\n");
+		out.push_str("stop() {\n");
+		out.push_str("\tebegin\n");
+		out.push_str("\t\tstart-stop-daemon --stop --pidfile \"$pidfile\"\n");
+		out.push_str("\teend $?\n");
 		out.push_str("}\n");
 	} else {
 		let is_oneshot = body.lines().any(|l| l.trim() == "Type=oneshot");
@@ -283,18 +289,23 @@ fn generate_openrc_script(unit_name: &str, body: &str) -> String {
 
 			if args.is_empty() {
 				out.push_str(&format!(
-					"\tstart-stop-daemon --start --pidfile \"$pidfile\" \\
+					"\tstart-stop-daemon --start --make-pidfile \"$pidfile\" \\
 \t\t--background --exec {}\n",
 					bin
 				));
 			} else {
 				out.push_str(&format!(
-					"\tstart-stop-daemon --start --pidfile \"$pidfile\" \\
+					"\tstart-stop-daemon --start --make-pidfile \"$pidfile\" \\
 \t\t--background --exec {} -- {}\n",
 					bin, args
 				));
 			}
 		}
+		out.push_str("}\n");
+		out.push_str("stop() {\n");
+		out.push_str("\tebegin\n");
+		out.push_str("\tstart-stop-daemon --stop --pidfile \"$pidfile\"\n");
+		out.push_str("\teend $?\n");
 		out.push_str("}\n");
 	}
 
