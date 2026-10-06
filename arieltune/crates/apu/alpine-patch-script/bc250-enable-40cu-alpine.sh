@@ -63,14 +63,15 @@ check_deps() {
 		pkgs_to_install="${pkgs_to_install} gawk"
 	fi
 
-	if [ ! -d "${MODDIR}/build" ] && [ ! -d "/usr/src/linux" ]; then
-		flavor="lts"
-		case "${KVER}" in
-		*-virt*) flavor="virt" ;;
-		*-hardened*) flavor="hardened" ;;
-		*-zen*) flavor="zen" ;;
-		*) flavor="lts" ;;
-		esac
+	flavor="lts"
+	case "${KVER}" in
+	*-virt*) flavor="virt" ;;
+	*-hardened*) flavor="hardened" ;;
+	*-zen*) flavor="zen" ;;
+	*) flavor="lts" ;;
+	esac
+
+	if ! apk info -e "linux-${flavor}-dev" >/dev/null 2>&1 && [ ! -d "${MODDIR}/build" ] && ! ls -d /usr/src/linux-headers-* >/dev/null 2>&1; then
 		pkgs_to_install="${pkgs_to_install} linux-${flavor}-dev linux-headers build-base pahole elfutils-dev openssl-dev flex bison bc perl zstd-dev syslinux"
 	fi
 
@@ -280,7 +281,7 @@ build_module() {
 
 		# Copy Module.symvers if not already copied by find_source
 		if [ ! -f "${MODSRC}/Module.symvers" ]; then
-			for _symvers in /lib/modules/${KVER}/Module.symvers /lib/modules/${KVER}/build/Module.symvers /usr/src/linux/Module.symvers; do
+			for _symvers in /lib/modules/*/Module.symvers /lib/modules/*/build/Module.symvers /usr/src/linux-headers-*/Module.symvers /usr/src/linux/Module.symvers; do
 				if [ -f "$_symvers" ]; then
 					cp "$_symvers" "${MODSRC}/Module.symvers" 2>> "$BUILDLOG"
 					break
@@ -296,7 +297,7 @@ build_module() {
 
 	# Ensure Module.symvers is present after modules_prepare
 	if [ ! -f "${MODSRC}/Module.symvers" ]; then
-		for _symvers in /lib/modules/${KVER}/Module.symvers /lib/modules/${KVER}/build/Module.symvers /usr/src/linux/Module.symvers /usr/src/linux-headers-${KVER}/Module.symvers; do
+		for _symvers in /lib/modules/*/Module.symvers /lib/modules/*/build/Module.symvers /usr/src/linux-headers-*/Module.symvers /usr/src/linux/Module.symvers; do
 			if [ -f "$_symvers" ]; then
 				cp "$_symvers" "${MODSRC}/Module.symvers" 2>> "$BUILDLOG"
 				break
@@ -309,7 +310,7 @@ build_module() {
 
 	# Re-ensure Module.symvers after clean
 	if [ ! -f "${MODSRC}/Module.symvers" ]; then
-		for _symvers in /lib/modules/${KVER}/Module.symvers /lib/modules/${KVER}/build/Module.symvers /usr/src/linux/Module.symvers /usr/src/linux-headers-${KVER}/Module.symvers; do
+		for _symvers in /lib/modules/*/Module.symvers /lib/modules/*/build/Module.symvers /usr/src/linux-headers-*/Module.symvers /usr/src/linux/Module.symvers; do
 			if [ -f "$_symvers" ]; then
 				cp "$_symvers" "${MODSRC}/Module.symvers" 2>> "$BUILDLOG"
 				break
