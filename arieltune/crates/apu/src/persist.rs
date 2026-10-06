@@ -22,6 +22,12 @@ use std::sync::OnceLock;
 
 use anyhow::{ensure, Context, Result};
 
+const GPU_UNIT_OPENRC_SCRIPT: &str = include_str!("../alpine-patch-script/arieltune_gpu");
+
+fn gpu_unit_openrc_script() -> &'static str {
+	GPU_UNIT_OPENRC_SCRIPT
+}
+
 // ---------------------------------------------------------------------------+
 // Init-system detection                                                     |
 // +-------------------------------------------------------------------------+
@@ -190,8 +196,12 @@ fn install_enable(unit: &str, body: &str) -> Result<()> {
 		InitSystem::OpenRc => {
 			let rc = strip_rc_unit(unit);
 			let path = format!("/etc/init.d/{rc}");
-			// Body is systemd syntax; generate a proper OpenRC shell script.
-			let script = generate_openrc_script(unit, body);
+			// GPU power unit: ship the pre-built OpenRC script (avoids embed issues).
+			let script = if unit == GPU_UNIT {
+				gpu_unit_openrc_script()
+			} else {
+				&generate_openrc_script(unit, body)
+			};
 			std::fs::write(&path, &script)
 				.with_context(|| format!("write {path} (need root)"))?;
 			let perm = std::os::unix::fs::PermissionsExt::from_mode(0o755);

@@ -4,6 +4,31 @@
 # Translated from systemd unit for OpenRC compatibility
 # `arieltune apu` manages this — do not edit manually.
 
+name="arieltune-gpu"
+description="ArielTune GPU background service"
+pidfile="/run/arieltune-gpu.pid"
+
+depend() {
+	after openssh gpu
+	use userstat
+}
+
 start() {
-	    /usr/local/bin/arieltune apu gpu apply-boot &
+	ebegin "Starting arieltune-gpu"
+
+	if grep -Eq '"force_mhz"[[:space:]]*:[[:space:]]*[0-9]' /var/lib/aputune/power.json; then
+		start-stop-daemon --start --pidfile "$pidfile" --make-pidfile \
+			--background --exec /usr/local/bin/arieltune -- apu gpu apply-boot
+	else
+		start-stop-daemon --start --pidfile "$pidfile" --make-pidfile \
+			--background --exec /usr/local/bin/arieltune -- apu gpu apply-boot
+	fi
+
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping arieltune-gpu"
+	start-stop-daemon --stop --pidfile "$pidfile"
+	eend $?
 }
