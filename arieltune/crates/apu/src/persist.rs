@@ -239,6 +239,9 @@ fn generate_openrc_script(unit_name: &str, body: &str) -> String {
 		.any(|l| l.trim().starts_with("ExecStart=") && l.contains("gpu apply-boot"));
 
 	if is_gpu_unit {
+		out.push_str("depends() {\n");
+		out.push_str("\tafter(\"openssh\")\n");
+		out.push_str("}\n\n");
 		out.push_str("start() {\n");
 		out.push_str("\tif grep -q \"force_mhz\" /var/lib/aputune/power.json; then\n");
 		out.push_str(&format!("\t\t{exec_start}\n"));
