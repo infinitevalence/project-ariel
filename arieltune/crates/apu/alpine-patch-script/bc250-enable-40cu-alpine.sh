@@ -202,36 +202,49 @@ patch_source() {
 		*) continue ;;
 		esac
 
-		# Determine default and prompt suffix
-		if echo "$skip_default" | grep -qw "$pnum"; then
-			default="n"
-			prompt_suffix="(y/N)"
-		else
-			default="Y"
-			prompt_suffix="(Y/n)"
-		fi
-
-		# Prompt - clean and concise
-		printf 'Apply patch %s: %s %s: ' \
-			"$pnum" "$desc" "$prompt_suffix" >&2
-		read -r ans
-		ans="$(echo "$ans" | tr '[:upper:]' '[:lower:]')"
-
-		# Parse response
-		case "$ans" in
-			y|yes)
+		# Non-interactive or interactive?
+		if [ -n "$OPT_PATCHES" ]; then
+			# Non-interactive: pick patches from comma-separated --patches arg
+			if ! echo "$skip_default" | grep -qw "$pnum"; then
+				# Default patch: always include
 				selected_patches="${selected_patches} ${pnum}"
-				;;
-			n|no)
-				# Explicit no
-				;;
-			*)
-				# Empty = use default: accept if default Y, reject if default N
-				if ! echo "$skip_default" | grep -qw "$pnum"; then
+			else
+				# Opt-in patch: check if it's in the --patches list
+				patch_csv=" $(echo "$OPT_PATCHES" | tr ',' ' ')"
+				if echo "$patch_csv" | grep -qw "$pnum"; then
 					selected_patches="${selected_patches} ${pnum}"
 				fi
-				;;
-		esac
+			fi
+		else
+			# Interactive mode
+			if echo "$skip_default" | grep -qw "$pnum"; then
+				default="n"
+				prompt_suffix="(y/N)"
+			else
+				default="Y"
+				prompt_suffix="(Y/n)"
+			fi
+
+			# Prompt - clean and concise
+			printf 'Apply patch %s: %s %s: ' \
+				"$pnum" "$desc" "$prompt_suffix" >&2
+			read -r ans
+			ans="$(echo "$ans" | tr '[:upper:]' '[:lower:]')"
+
+			# Parse response
+			case "$ans" in
+				y|yes)
+					selected_patches="${selected_patches} ${pnum}"
+					;;
+				n|no)
+					;;
+				*)
+					if ! echo "$skip_default" | grep -qw "$pnum"; then
+						selected_patches="${selected_patches} ${pnum}"
+					fi
+					;;
+			esac
+		fi
 	done
 
 	# Apply selected patches
@@ -399,11 +412,13 @@ do_status() {
 
 # Parse --verbose / -v and --patches from args
 OPT_PATCHES=""
+_i=1
 for _arg in "$@"; do
 	case "$_arg" in
 		--verbose|-v) VERBOSE=1 ;;
-		--patches) OPT_PATCHES="${2:-}" ;;
-	esac
+		--patches) OPT_PATCHES="${!((_i+1))}" ;;
+		esac
+	((++_i)) || true
 done
 
 action="${1:-}"

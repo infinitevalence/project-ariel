@@ -1,117 +1,36 @@
-belicose:~/project-ariel$ doas ./arieltune/crates/apu/alpine-patch-script/bc250-enable-40cu-alp
-ine.sh build
-doas (infinitevalence@belicose.endlessdelve.com) password:
-[+] Missing dependencies detected. Installing via apk: linux-lts-dev linux-headers build-base pahole elfutils-dev openssl-dev flex bison bc perl zstd-dev syslinux...
-v3.24.2-86-g3e05bdc04e1 [http://mirrors.gigenet.com/alpinelinux/v3.24/main]
-v3.24.2-87-gcc3c058c10e [http://mirrors.gigenet.com/alpinelinux/v3.24/community]
-OK: 28650 distinct packages available
-OK: 1156.6 MiB in 178 packages
-[+] BC-250 (PCI ID 13fe) successfully verified.
-[+] Found .config.
-[+] Source already patched.
-[+] Configuring kernel configuration...
-[+] Kernel sources found, but .config or Module.symvers missing - finding locally...
-[+] Supplemented .config + Module.symvers from system.
-[+] Compiling amdgpu module directly (olddefconfig + modules_prepare + make modules)...
-[E] Compilation failed. Check build log at: /tmp/bc250-40cu-build.log
-belicose:~/project-ariel$ tail -n 100 /tmp/bc250-40cu-build.log
-  CC [M]  sdma_v4_4_2.o
-  CC [M]  sdma_v5_0.o
-  CC [M]  sdma_v5_2.o
-  CC [M]  sdma_v6_0.o
-  CC [M]  sdma_v7_0.o
-  CC [M]  amdgpu_mes.o
-  CC [M]  mes_v11_0.o
-  CC [M]  mes_v12_0.o
-  CC [M]  mes_userqueue.o
-  CC [M]  amdgpu_uvd.o
-  CC [M]  uvd_v5_0.o
-  CC [M]  uvd_v6_0.o
-  CC [M]  uvd_v7_0.o
-  CC [M]  amdgpu_vce.o
-  CC [M]  vce_v3_0.o
-  CC [M]  vce_v4_0.o
-  CC [M]  amdgpu_vcn.o
-  CC [M]  vcn_sw_ring.o
-  CC [M]  vcn_v1_0.o
-  CC [M]  vcn_v2_0.o
-  CC [M]  vcn_v2_5.o
-  CC [M]  vcn_v3_0.o
-  CC [M]  vcn_v4_0.o
-  CC [M]  vcn_v4_0_3.o
-  CC [M]  vcn_v4_0_5.o
-  CC [M]  vcn_v5_0_0.o
-  CC [M]  vcn_v5_0_1.o
-  CC [M]  amdgpu_jpeg.o
-  CC [M]  jpeg_v1_0.o
-  CC [M]  jpeg_v2_0.o
-  CC [M]  jpeg_v2_5.o
-  CC [M]  jpeg_v3_0.o
-  CC [M]  jpeg_v4_0.o
-  CC [M]  jpeg_v4_0_3.o
-  CC [M]  jpeg_v4_0_5.o
-  CC [M]  jpeg_v5_0_0.o
-  CC [M]  jpeg_v5_0_1.o
-  CC [M]  amdgpu_vpe.o
-  CC [M]  vpe_v6_1.o
-  CC [M]  amdgpu_umsch_mm.o
-  CC [M]  umsch_mm_v4_0.o
-  CC [M]  athub_v1_0.o
-  CC [M]  athub_v2_0.o
-  CC [M]  athub_v2_1.o
-  CC [M]  athub_v3_0.o
-  CC [M]  athub_v4_1_0.o
-  CC [M]  smuio_v9_0.o
-  CC [M]  smuio_v11_0.o
-  CC [M]  smuio_v11_0_6.o
-  CC [M]  smuio_v13_0.o
-  CC [M]  smuio_v13_0_3.o
-  CC [M]  smuio_v13_0_6.o
-  CC [M]  smuio_v14_0_2.o
-  CC [M]  amdgpu_reset.o
-  CC [M]  mca_v3_0.o
-  CC [M]  amdgpu_amdkfd.o
-  CC [M]  amdgpu_userq.o
-  CC [M]  amdgpu_amdkfd_fence.o
-  CC [M]  amdgpu_amdkfd_gpuvm.o
-  CC [M]  amdgpu_amdkfd_gfx_v8.o
-  CC [M]  amdgpu_amdkfd_gfx_v9.o
-  CC [M]  amdgpu_amdkfd_arcturus.o
-  CC [M]  amdgpu_amdkfd_aldebaran.o
-  CC [M]  amdgpu_amdkfd_gc_9_4_3.o
-  CC [M]  amdgpu_amdkfd_gfx_v10.o
-  CC [M]  amdgpu_amdkfd_gfx_v10_3.o
-  CC [M]  amdgpu_amdkfd_gfx_v11.o
-  CC [M]  amdgpu_amdkfd_gfx_v12.o
-  CC [M]  amdgpu_amdkfd_gfx_v7.o
-  CC [M]  amdgpu_cgs.o
-  CC [M]  amdgpu_job.o
-  CC [M]  amdgpu_acp.o
-  CC [M]  amdgpu_ioc32.o
-  CC [M]  amdgpu_atpx_handler.o
-  CC [M]  amdgpu_acpi.o
-  CC [M]  amdgpu_hmm.o
-  LD [M]  amdgpu.o
-  MODPOST Module.symvers
-WARNING: /tmp/bc250-40cu-build/linux-6.18.54/Module.symvers is missing.
-         Modules may not have dependencies or modversions.
-         You may get many unresolved symbol errors.
-         You can set KBUILD_MODPOST_WARN=1 to turn errors into warning
-         if you want to proceed at your own risk.
-ERROR: modpost: "kobj_sysfs_ops" [amdgpu.ko] undefined!
-ERROR: modpost: "drm_writeback_queue_job" [amdgpu.ko] undefined!
-ERROR: modpost: "memmove" [amdgpu.ko] undefined!
-ERROR: modpost: "drm_dp_atomic_find_time_slots" [amdgpu.ko] undefined!
-ERROR: modpost: "drm_dsc_compute_rc_parameters" [amdgpu.ko] undefined!
-ERROR: modpost: "ttm_bo_vm_close" [amdgpu.ko] undefined!
-ERROR: modpost: "drm_print_memory_stats" [amdgpu.ko] undefined!
-ERROR: modpost: "__drm_crtc_commit_free" [amdgpu.ko] undefined!
-ERROR: modpost: "drm_syncobj_get_handle" [amdgpu.ko] undefined!
-ERROR: modpost: "pm_genpd_add_device" [amdgpu.ko] undefined!
-WARNING: modpost: suppressed 1054 unresolved symbol warnings because there were too many)
-make[3]: *** [/tmp/bc250-40cu-build/linux-6.18.54/scripts/Makefile.modpost:147: Module.symvers] Error 1
-make[2]: *** [/tmp/bc250-40cu-build/linux-6.18.54/Makefile:2000: modpost] Error 2
-make[1]: *** [/tmp/bc250-40cu-build/linux-6.18.54/Makefile:248: __sub-make] Error 2
-make[1]: Leaving directory '/tmp/bc250-40cu-build/linux-6.18.54/drivers/gpu/drm/amd/amdgpu'
-make: *** [Makefile:248: __sub-make] Error 2
-make: Leaving directory '/tmp/bc250-40cu-build/linux-6.18.54'
+Push 3 8f7652f compiles clean and lands both round-2 fixes, but carries two new blockers - one hangs boot in governor mode, one reopens the double-writer wedge.
+
+What checks out
+cargo check -p apu --all-targets on 8f7652f here: clean. The newline-split bug is gone - start-stop-daemon lines now emit real backslash continuations (persist.rs:254, :260). enabled() reads /etc/runlevel/default/{rc} (persist.rs:328), so the legacy-unit guard works again.
+
+Blocker 1 - the force_mhz grep matches every power.json.
+PowerConfig::save writes serde_json::to_string_pretty(self) (dpm.rs:217) and force_mhz is an Option<u32> with no skip_serializing_if (dpm.rs:83) - auto mode still serializes "force_mhz": null. So grep -q "force_mhz" (persist.rs:243) is always true, the sync branch always fires, and gpu apply-boot runs the governor in-process (cli.rs:329) inside start() - OpenRC start never returns on a governor-mode boot. This is from reading the source; confirm it on your Alpine box. Match the value, not the key:
+
+grep -Eq '"force_mhz"[[:space:]]*:[[:space:]]*[0-9]' /var/lib/aputune/power.json
+
+
+or drop null keys with #[serde(skip_serializing_if = "Option::is_none")].
+
+Blocker 2 - the backgrounded daemon has no stop() and no pidfile.
+The generated script defines only start(), and --background without --make-pidfile never writes /run/{name}.pid. Stop/restart cannot reap the old governor, so a restart starts a second SMU writer - the round-1 wedge class, only half fixed. Add --make-pidfile (consider --wait) and emit:
+
+stop() {
+        ebegin
+        start-stop-daemon --stop --pidfile "$pidfile"
+        eend $?
+}
+
+
+Nothing pins the generated script text yet; one string test asserting both fixes would have caught blocker 1 - and it must fail with the fix reverted.
+
+
+@infinitevalence Not good to merge yet - push 3 8f7652f still has two blockers, and both are OpenRC-only paths, which is why your testing looks clean.
+
+The full round-3 review is the post right above this one. Short version:
+
+grep -q "force_mhz" matches EVERY power.json, because serde serializes "force_mhz": null in auto mode (dpm.rs:83, no skip_serializing_if). The sync branch always fires and gpu apply-boot runs the governor in-process inside start() - a governor-mode Alpine boot hangs there.
+The generated script defines only start(), and --background without --make-pidfile never writes /run/{name}.pid, so stop/restart cannot reap the old governor - a restart starts a second SMU writer.
+
+What is solid: cargo check -p apu --all-targets is clean at 8f7652f, the newline-split fix is correct, and the enabled() runlevel path holds.
+
+For your Alpine user: point them at your fork at 8f7652f and tell them to use a manual clock pin (apu gpu clock set) rather than governor mode until blocker 1 is fixed - manual pin is exactly the branch that works today. Push the two fixes and I will re-run the checks here, then we can talk merge.
